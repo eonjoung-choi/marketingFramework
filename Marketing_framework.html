@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>앱 사용자 현황 분석 프레임워크</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F4F3EF;
+  --surface: #FFFFFF;
+  --border: #E2E0D8;
+  --border-strong: #C8C6BC;
+  --t1: #18181A;
+  --t2: #64635E;
+  --t3: #9C9A92;
+  --r: 10px;
+  --r-sm: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 48px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  gap: 24px;
+}
+.site-header .logo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -.2px;
+  white-space: nowrap;
+}
+.site-header .sep { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+.header-axes {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  overflow: hidden;
+}
+.axis-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--t3);
+  white-space: nowrap;
+}
+.axis-chip .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── LAYOUT ── */
+main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+}
+section { margin-bottom: 52px; }
+
+.sec-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.sec-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: .12em;
+  font-variant-numeric: tabular-nums;
+}
+.sec-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+}
+.sec-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── DIMENSION CARDS ── */
+.dim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.dim-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+}
+.dim-axis {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--t3);
+  margin-bottom: 6px;
+}
+.dim-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  letter-spacing: -.2px;
+}
+.dim-desc { font-size: 12px; color: var(--t2); margin-bottom: 16px; }
+.seg-list { display: flex; flex-direction: column; gap: 5px; }
+.seg-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid;
+  font-size: 12px;
+}
+.seg-row .sr-name { font-weight: 700; }
+.seg-row .sr-val { font-size: 11px; opacity: .8; }
+
+/* ── FEATURE TYPE ── */
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.feat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid;
+  border-radius: var(--r);
+  padding: 16px 18px;
+}
+.feat-type { font-size: 10px; font-weight: 700; letter-spacing: .08em; margin-bottom: 4px; }
+.feat-name { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--t1); }
+.feat-items { font-size: 11px; color: var(--t2); line-height: 1.9; }
+
+/* ── LIFECYCLE TABS ── */
+.tab-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r) var(--r) 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  overflow: hidden;
+}
+.tab-btn {
+  padding: 14px 10px 12px;
+  text-align: center;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  transition: background .15s;
+  user-select: none;
+  position: relative;
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn:hover { background: var(--bg); }
+.tab-btn.active { background: var(--surface); }
+.tab-btn .tb-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t2);
+  display: block;
+  transition: color .15s, font-weight .15s;
+}
+.tab-btn.active .tb-label { font-weight: 700; }
+.tab-btn .tb-period { font-size: 10px; color: var(--t3); display: block; margin-top: 2px; }
+.tab-btn .tb-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background .15s;
+}
+
+/* ── LIFECYCLE CONTEXT ── */
+.lc-context {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 0 0;
+  padding: 12px 18px;
+  font-size: 12px;
+  color: var(--t2);
+  line-height: 1.7;
+  border-left-width: 4px;
+  transition: border-left-color .2s, background .2s;
+}
+
+/* ── MATRIX ── */
+.matrix-outer {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  padding: 16px;
+  background: var(--bg);
+}
+.matrix {
+  display: grid;
+  grid-template-columns: 82px repeat(3, 1fr);
+  gap: 7px;
+}
+.col-hdr {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 10px;
+  text-align: center;
+}
+.col-hdr-name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.col-hdr-sub { font-size: 10px; color: var(--t3); }
+.col-hdr-tags { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.type-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  letter-spacing: .03em;
+}
+
+.row-hdr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  padding-right: 4px;
+}
+.row-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.row-sub { font-size: 10px; color: var(--t3); text-align: right; }
+.row-churn { font-size: 9px; color: var(--t3); text-align: right; line-height: 1.4; }
+
+/* ── CELL ── */
+.cell {
+  border-radius: var(--r-sm);
+  padding: 12px 13px;
+  border: 1px solid;
+  position: relative;
+  animation: cellIn .25s ease both;
+}
+@keyframes cellIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cell-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: .02em;
+}
+.cell-signal { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.cell-signal.blink { animation: blink 1.6s ease-in-out infinite; }
+.cell-name { font-size: 12px; font-weight: 700; margin-bottom: 5px; line-height: 1.4; }
+.cell-desc { font-size: 11px; line-height: 1.55; }
+.cell-desc .muted { opacity: .65; }
+
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.leg-group { display: flex; align-items: center; gap: 14px; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--t2); }
+.leg-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; border: 1px solid; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.leg-sep { width: 1px; height: 14px; background: var(--border); margin: 0 14px; }
+
+/* ── SIGNALS ── */
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.signal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid;
+  border-radius: var(--r);
+  padding: 18px 20px;
+}
+.sig-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sig-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sig-title { font-size: 13px; font-weight: 700; }
+.sig-body { font-size: 11px; color: var(--t2); line-height: 1.8; }
+.sig-cond { margin-bottom: 4px; }
+.sig-weight { color: var(--t3); }
+
+/* ── FOOTER ── */
+footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 11px;
+  color: var(--t3);
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">앱 사용자 현황 분석 프레임워크</div>
+  <div class="sep"></div>
+  <div class="header-axes">
+    <div class="axis-chip"><div class="dot" style="background:#22C55E;"></div>Y축 · 방문 빈도 세그먼트 (파워 / 캐쥬얼 / 라이트)</div>
+    <div class="axis-chip"><div class="dot" style="background:#7C3AED;"></div>X축 · 기능 활용 프로파일</div>
+    <div class="axis-chip"><div class="dot" style="background:#D97706;"></div>레이어 · 생애주기 단계</div>
+  </div>
+</header>
+
+<main>
+
+  <section id="sec-dim">
+    <div class="sec-header">
+      <span class="sec-num">01</span>
+      <span class="sec-title">분석 차원 구조</span>
+      <div class="sec-rule"></div>
+    </div>
+    <div class="dim-grid">
+      <div class="dim-card">
+        <div class="dim-axis">축 1 · Y축</div>
+        <div class="dim-name">방문 빈도 세그먼트</div>
+        <div class="dim-desc">월 로그인 일수 기준 — 내부 3단계 분류</div>
+        <div class="seg-list">
+          <div class="seg-row" style="background:#F0FDF4;border-color:#86EFAC;color:#166534;">
+            <span class="sr-name">파워</span><span class="sr-val">월 8일 이상 로그인</span>
+          </div>
+          <div class="seg-row" style="background:#EFF6FF;border-color:#93C5FD;color:#1E40AF;">
+            <span class="sr-name">캐쥬얼</span><span class="sr-val">월 3~7일 로그인</span>
+          </div>
+          <div class="seg-row" style="background:#F8F7F5;border-color:#D1D0CA;color:#6B6966;">
+            <span class="sr-name">라이트</span><span class="sr-val">월 1~2회 로그인</span>
+          </div>
+        </div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-axis">축 2 · X축</div>
+        <div class="dim-name">기능 활용 프로파일</div>
+        <div class="dim-desc">이용 기능의 유형 구성비로 판별 (개수 + 질)</div>
+        <div class="seg-list">
+          <div class="seg-row" style="background:#F5F5F0;border-color:#BDBDB4;color:#5C5C50;">
+            <span class="sr-name">확인형 집중</span><span class="sr-val">확인형 기능 70%+</span>
+          </div>
+          <div class="seg-row" style="background:#F0FDF4;border-color:#6EE7B7;color:#065F46;">
+            <span class="sr-name">혼합 활용</span><span class="sr-val">2개 이상 유형 각 20%+</span>
+          </div>
+          <div class="seg-row" style="background:#F5F3FF;border-color:#C4B5FD;color:#4C1D95;">
+            <span class="sr-name">탐색·관리·실행형</span><span class="sr-val">혜택·관리·실행 합산 50%+</span>
+          </div>
+        </div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-axis">축 3 · 레이어</div>
+        <div class="dim-name">생애주기 단계</div>
+        <div class="dim-desc">동일 셀도 단계에 따라 의미가 달라짐</div>
+        <div class="seg-list">
+          <div class="seg-row" style="background:#ECFDF5;border-color:#6EE7B7;color:#064E3B;">
+            <span class="sr-name">신규</span><span class="sr-val">D+0~30일</span>
+          </div>
+          <div class="seg-row" style="background:#EFF6FF;border-color:#93C5FD;color:#1E3A8A;">
+            <span class="sr-name">성장</span><span class="sr-val">D+31~180일</span>
+          </div>
+          <div class="seg-row" style="background:#F5F3FF;border-color:#C4B5FD;color:#4C1D95;">
+            <span class="sr-name">성숙</span><span class="sr-val">D+181일+</span>
+          </div>
+          <div class="seg-row" style="background:#FFFBEB;border-color:#FCD34D;color:#78350F;">
+            <span class="sr-name">복귀</span><span class="sr-val">중단 후 재방문</span>
+          </div>
+          <div class="seg-row" style="background:#FEF2F2;border-color:#FCA5A5;color:#7F1D1D;">
+            <span class="sr-name">이탈</span><span class="sr-val">30일+ 미방문</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-feat">
+    <div class="sec-header">
+      <span class="sec-num">02</span>
+      <span class="sec-title">기능 유형 분류 — X축 구성 기반</span>
+      <div class="sec-rule"></div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card" style="border-top-color:#9CA3AF;">
+        <div class="feat-type" style="color:#6B7280;">확인형 · Passive Check</div>
+        <div class="feat-name">단순 조회·확인 기능</div>
+        <div class="feat-items">결제 내역 조회<br>명세서 확인<br>잔액·한도 확인<br>청구금액 확인</div>
+      </div>
+      <div class="feat-card" style="border-top-color:#3B82F6;">
+        <div class="feat-type" style="color:#2563EB;">혜택형 · Benefit Seeking</div>
+        <div class="feat-name">혜택 탐색·발굴 기능</div>
+        <div class="feat-items">혜택 조회·발급<br>쿠폰·이벤트 참여<br>포인트 적립·사용<br>카드 추천</div>
+      </div>
+      <div class="feat-card" style="border-top-color:#10B981;">
+        <div class="feat-type" style="color:#059669;">관리형 · Self-Management</div>
+        <div class="feat-name">소비·자산 관리 기능</div>
+        <div class="feat-items">소비 패턴 분석<br>예산 설정·관리<br>알림 설정<br>카드 등록·관리</div>
+      </div>
+      <div class="feat-card" style="border-top-color:#7C3AED;">
+        <div class="feat-type" style="color:#6D28D9;">실행형 · Transactional</div>
+        <div class="feat-name">직접 실행·변경 기능</div>
+        <div class="feat-items">분할·일시불 변경<br>한도 변경 신청<br>즉시 결제·이체<br>서비스 신청</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-matrix">
+    <div class="sec-header">
+      <span class="sec-num">03</span>
+      <span class="sec-title">생애주기 × 세그먼트 매트릭스</span>
+      <div class="sec-rule"></div>
+    </div>
+
+    <div class="tab-wrap" id="tabWrap"></div>
+    <div class="lc-context" id="lcCtx"></div>
+    <div class="matrix-outer">
+      <div class="matrix" id="matrix"></div>
+    </div>
+
+    <div class="legend">
+      <div class="leg-group">
+        <div class="leg-item"><div class="leg-swatch" style="background:#D1FAE5;border-color:#059669;"></div>최적</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#DCFCE7;border-color:#22C55E;"></div>건강</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#ECEAE4;border-color:#C8C6BC;"></div>정상</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#DBEAFE;border-color:#3B82F6;"></div>주시</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#FEF3C7;border-color:#D97706;"></div>경고</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#FFE4E6;border-color:#E11D48;"></div>위험</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#DC2626;border-color:#DC2626;"></div>이상징후</div>
+      </div>
+      <div class="leg-sep"></div>
+      <div class="leg-group">
+        <div class="leg-item"><div class="leg-dot" style="background:#DC2626;"></div>이상징후 감지</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#059669;"></div>기회 포착</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-signal">
+    <div class="sec-header">
+      <span class="sec-num">04</span>
+      <span class="sec-title">세그 다운그레이드 & 이탈 위험 신호 탐지</span>
+      <div class="sec-rule"></div>
+    </div>
+    <div class="signal-grid">
+      <div class="signal-card" style="border-left-color:#DC2626;">
+        <div class="sig-head">
+          <div class="sig-dot" style="background:#DC2626;"></div>
+          <div class="sig-title">파워 → 캐쥬얼 다운그레이드</div>
+        </div>
+        <div class="sig-body">
+          <div class="sig-cond">조건: 직전월 8일+ 로그인 → 당월 3~7일</div>
+          <div class="sig-weight">가중: 확인형 기능 비중 증가 동반 시</div>
+          <div class="sig-weight">가중: 연속 2개월 하락 시 이상징후 확정</div>
+        </div>
+      </div>
+      <div class="signal-card" style="border-left-color:#D97706;">
+        <div class="sig-head">
+          <div class="sig-dot" style="background:#D97706;"></div>
+          <div class="sig-title">캐쥬얼 → 라이트 다운그레이드</div>
+        </div>
+        <div class="sig-body">
+          <div class="sig-cond">조건: 직전월 3~7일 → 당월 1~2회</div>
+          <div class="sig-weight">가중: 기능 유형 확인형으로 수렴 동반 시</div>
+          <div class="sig-weight">가중: 성숙 단계 장기 사용자일수록 심각</div>
+        </div>
+      </div>
+      <div class="signal-card" style="border-left-color:#3B82F6;">
+        <div class="sig-head">
+          <div class="sig-dot" style="background:#3B82F6;"></div>
+          <div class="sig-title">라이트 → 이탈 직전 감지</div>
+        </div>
+        <div class="sig-body">
+          <div class="sig-cond">조건: 라이트 상태에서 14일+ 미방문</div>
+          <div class="sig-weight">가중: 마지막 이용 기능 = 확인형 단독</div>
+          <div class="sig-weight">참고: 가입 기간별 기준값 별도 적용 권장</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  신용카드 앱 사용자 현황 분석 프레임워크 · Y축(방문 빈도) × X축(기능 프로파일) × 레이어(생애주기)
+</footer>
+
+<script>
+const ST = {
+  best:    {l:'최적',    bg:'#ECFDF5',br:'#059669',tx:'#064E3B',bbg:'#D1FAE5',btx:'#065F46'},
+  good:    {l:'건강',    bg:'#F0FDF4',br:'#22C55E',tx:'#166534',bbg:'#DCFCE7',btx:'#166534'},
+  normal:  {l:'정상',    bg:'#F8F7F5',br:'#D1D0CA',tx:'#5C5C58',bbg:'#ECEAE4',btx:'#6B6966'},
+  watch:   {l:'주시',    bg:'#EFF6FF',br:'#93C5FD',tx:'#1E3A8A',bbg:'#DBEAFE',btx:'#1E40AF'},
+  warning: {l:'경고',    bg:'#FFFBEB',br:'#FCD34D',tx:'#78350F',bbg:'#FEF3C7',btx:'#92400E'},
+  danger:  {l:'위험',    bg:'#FFF1F2',br:'#FECDD3',tx:'#881337',bbg:'#FFE4E6',btx:'#9F1239'},
+  anomaly: {l:'이상징후', bg:'#FEF2F2',br:'#DC2626',tx:'#7F1D1D',bbg:'#DC2626',btx:'#FFFFFF'},
+};
+
+const LC = [
+  {id:'new',     label:'신규',  period:'D+0~30일',      color:'#059669', bg:'#F0FDF9',
+   desc:'가입 직후 단계. 라이트 구간에 머무는 신규 유저는 온보딩 이탈 전조로 즉시 감지 필요. 확인형 집중은 탐색 중인 정상 행동이나, 파워 신규가 확인형에만 머물면 기능 안내 넛지 필요.'},
+  {id:'growth',  label:'성장',  period:'D+31~180일',    color:'#2563EB', bg:'#EFF6FF',
+   desc:'습관 형성 기간. 이 단계에서 파워가 확인형에 고착되기 시작하면 조기 개입 필수. 캐쥬얼이 탐색·관리형을 쓰면서 파워로 전환되는 긍정 신호도 이 구간에서 포착됨.'},
+  {id:'mature',  label:'성숙',  period:'D+181일+',      color:'#7C3AED', bg:'#F5F3FF',
+   desc:'장기 사용자 단계. 파워+확인형 고착은 이 단계의 핵심 이상징후. 기능을 알면서도 쓰지 않는 상태로 단순 미인지와 다른 접근 필요. 라이트 장기 사용자는 이탈 임박 경보 수준.'},
+  {id:'return',  label:'복귀',  period:'중단 후 재방문', color:'#D97706', bg:'#FFFBEB',
+   desc:'이탈 후 돌아온 유저. 복귀 시 어떤 기능부터 쓰는지가 재이탈 예측의 핵심 지표. 확인형만 쓰면서 라이트에 머물면 재이탈 가능성 매우 높음. 탐색·실행형 복귀는 긍정 신호.'},
+  {id:'churned', label:'이탈',  period:'30일+ 미방문',  color:'#DC2626', bg:'#FEF2F2',
+   desc:'이탈 완료 단계. Y축은 이탈 직전 마지막 세그먼트 기준. 직전 파워였던 이탈자는 윈백 최우선 대상. 캐쥬얼+탐색실행형 이탈자(기능형 이탈)는 회복 가능성이 높음.'},
+];
+
+const FREQS = [
+  {id:'power',  label:'파워',   sub:'월 8일+',  bg:'#F0FDF4', br:'#86EFAC', tx:'#166534'},
+  {id:'casual', label:'캐쥬얼', sub:'월 3~7일', bg:'#EFF6FF', br:'#93C5FD', tx:'#1E40AF'},
+  {id:'light',  label:'라이트', sub:'월 1~2회', bg:'#F8F7F5', br:'#D1D0CA', tx:'#6B6966'},
+];
+
+const FEATS = [
+  {id:'passive', label:'확인형 집중',     sub:'결제내역·명세서 위주',
+   tags:[{t:'확인형',bg:'#F1F0ED',tc:'#6B6966'}]},
+  {id:'mixed',   label:'혼합 활용',       sub:'여러 유형 균형',
+   tags:[{t:'확인형',bg:'#F1F0ED',tc:'#6B6966'},{t:'혜택형',bg:'#DBEAFE',tc:'#1E40AF'},{t:'관리형',bg:'#D1FAE5',tc:'#065F46'}]},
+  {id:'value',   label:'탐색·관리·실행형', sub:'혜택·분석·실행 중심',
+   tags:[{t:'혜택형',bg:'#DBEAFE',tc:'#1E40AF'},{t:'관리형',bg:'#D1FAE5',tc:'#065F46'},{t:'실행형',bg:'#EDE9FE',tc:'#4C1D95'}]},
+];
+
+const DATA = {
+  new:{
+    power:{
+      passive:{s:'watch',  n:'기능 탐색 시작',    d:'파워 방문이나 확인형 집중',         d2:'신규이므로 정상 범위',      sig:null},
+      mixed:  {s:'good',   n:'빠른 온보딩',       d:'방문·기능 모두 빠르게 정착',         d2:'좋은 시작 신호',            sig:null},
+      value:  {s:'best',   n:'고관여 신규',        d:'혜택·실행형 조기 활성화',           d2:'VIP 후보 마킹 적기',         sig:'o'},
+    },
+    casual:{
+      passive:{s:'normal', n:'일반 온보딩',        d:'무난한 시작 패턴',                  d2:'기능 안내 필요',             sig:null},
+      mixed:  {s:'good',   n:'정상 온보딩',        d:'균형 있는 초기 이용',               d2:'',                           sig:null},
+      value:  {s:'good',   n:'기능 탐색형',        d:'혜택·관리에 조기 관심',             d2:'',                           sig:null},
+    },
+    light:{
+      passive:{s:'warning',n:'온보딩 이탈 전조',   d:'라이트+확인형 = 관여도 낮음',       d2:'이탈 전조 이상징후',         sig:'a'},
+      mixed:  {s:'watch',  n:'느린 정착',          d:'기능은 탐색하나 방문 적음',         d2:'',                           sig:null},
+      value:  {s:'watch',  n:'탐색하나 방문 낮음', d:'기능 이해는 있음',                  d2:'방문 빈도 올리기 필요',      sig:null},
+    },
+  },
+  growth:{
+    power:{
+      passive:{s:'anomaly',n:'확인형 고착 경보',   d:'파워인데 확인형 집중',              d2:'성장기 고착 = 조기 이상징후', sig:'a'},
+      mixed:  {s:'good',   n:'건강한 성장',        d:'방문·기능 모두 성장 중',            d2:'',                           sig:null},
+      value:  {s:'best',   n:'슈퍼유저 후보',      d:'모든 지표 우수',                    d2:'VIP 전환 추진 적기',          sig:'o'},
+    },
+    casual:{
+      passive:{s:'watch',  n:'편식 가능성 주시',   d:'성장기 확인형 고착 시작',           d2:'방치 시 이탈 경로 진입',     sig:null},
+      mixed:  {s:'good',   n:'정상 성장',          d:'균형 잡힌 이용 패턴',              d2:'',                           sig:null},
+      value:  {s:'good',   n:'적극 활용',          d:'탐색·관리 활발',                   d2:'파워 전환 가능성',            sig:'o'},
+    },
+    light:{
+      passive:{s:'warning',n:'성장 정체',           d:'라이트+확인형 = 이탈 경로',         d2:'2개월 연속 시 위험',         sig:'a'},
+      mixed:  {s:'watch',  n:'성장 둔화',          d:'방문이 줄어드는 추세',              d2:'',                           sig:null},
+      value:  {s:'watch',  n:'방문만 낮음',         d:'기능 활용은 양호',                  d2:'방문 동기 발굴 필요',        sig:null},
+    },
+  },
+  mature:{
+    power:{
+      passive:{s:'anomaly',n:'핵심 이상징후',       d:'장기 파워가 확인형 고착',           d2:'앱 잠재력 미활용 상태',      sig:'a'},
+      mixed:  {s:'good',   n:'충성 사용자',         d:'장기 균형 이용 패턴',              d2:'',                           sig:null},
+      value:  {s:'best',   n:'VIP 유저',            d:'장기 + 전방위 활용',               d2:'핵심 유지 대상',              sig:'o'},
+    },
+    casual:{
+      passive:{s:'warning',n:'기능 편식 경계',      d:'장기인데 확인형 고착',              d2:'탈출 유도 적극 개입 필요',   sig:'a'},
+      mixed:  {s:'good',   n:'안정적 사용',         d:'장기 균형 이용',                   d2:'',                           sig:null},
+      value:  {s:'good',   n:'적극 활용자',         d:'혜택·분석 지속 활용',              d2:'',                           sig:null},
+    },
+    light:{
+      passive:{s:'danger', n:'이탈 임박',           d:'장기 사용자 방문 급감',             d2:'확인형 고착 = 이탈 초읽기',  sig:'a'},
+      mixed:  {s:'warning',n:'방문 감소 추세',      d:'방문 빈도 하향 중',                d2:'원인 분석 필요',              sig:'a'},
+      value:  {s:'watch',  n:'방문만 낮음',         d:'기능 활용은 양호',                  d2:'방문 동기 발굴 필요',        sig:null},
+    },
+  },
+  return:{
+    power:{
+      passive:{s:'watch',  n:'복귀 후 확인만',      d:'복귀했지만 구습 회귀',              d2:'기능 재탐색 유도 필요',      sig:null},
+      mixed:  {s:'good',   n:'성공적 복귀',         d:'복귀 후 균형 기능 활용',           d2:'',                           sig:null},
+      value:  {s:'best',   n:'완전 복귀',           d:'탐색·실행형 즉시 재활성화',        d2:'',                           sig:'o'},
+    },
+    casual:{
+      passive:{s:'watch',  n:'조심스런 복귀',       d:'확인형만 쓰며 복귀 중',            d2:'재이탈 가능성 관찰 필요',    sig:null},
+      mixed:  {s:'good',   n:'안정 복귀',           d:'균형 있는 복귀 패턴',             d2:'',                           sig:null},
+      value:  {s:'good',   n:'적극 복귀',           d:'빠른 관여도 회복',                d2:'',                           sig:'o'},
+    },
+    light:{
+      passive:{s:'warning',n:'재이탈 위험',         d:'라이트+확인형으로 복귀',           d2:'재이탈 가능성 매우 높음',    sig:'a'},
+      mixed:  {s:'watch',  n:'복귀 모니터링',       d:'방문 안정화 필요 단계',            d2:'',                           sig:null},
+      value:  {s:'watch',  n:'복귀 초기',           d:'기능 탐색은 재개',                 d2:'방문 빈도 아직 낮음',        sig:null},
+    },
+  },
+  churned:{
+    power:{
+      passive:{s:'danger', n:'파워 이탈',           d:'직전 파워 고관여 이탈',            d2:'윈백 1순위 대상',             sig:null},
+      mixed:  {s:'danger', n:'고가치 이탈',         d:'균형 이용 후 이탈',                d2:'원인 분석 후 윈백 필요',      sig:null},
+      value:  {s:'anomaly',n:'VIP 이탈',            d:'최고가치 사용자 이탈',              d2:'즉각 최우선 대응 필요',      sig:'a'},
+    },
+    casual:{
+      passive:{s:'danger', n:'일반 이탈',           d:'캐쥬얼 확인형 이탈',               d2:'',                           sig:null},
+      mixed:  {s:'danger', n:'중간 가치 이탈',      d:'균형 이용 후 이탈',                d2:'',                           sig:null},
+      value:  {s:'danger', n:'기능형 이탈',         d:'탐색·실행형 이탈',                 d2:'회복 가능성 높음',            sig:'a'},
+    },
+    light:{
+      passive:{s:'warning',n:'저관여 이탈',         d:'원래 저관여 상태였음',              d2:'비용 대비 효과 검토 필요',   sig:null},
+      mixed:  {s:'watch',  n:'경계 이탈',           d:'소극적 이용 후 이탈',              d2:'',                           sig:null},
+      value:  {s:'watch',  n:'잠재 복귀 가능',      d:'기능 이해 있었음',                  d2:'가벼운 넛지 반응 가능',     sig:null},
+    },
+  },
+};
+
+let cur = 'new';
+
+function render() {
+  const lc = LC.find(l => l.id === cur);
+
+  // Tabs
+  document.getElementById('tabWrap').innerHTML = LC.map(l => `
+    <div class="tab-btn ${cur === l.id ? 'active' : ''}" onclick="go('${l.id}')">
+      <span class="tb-label" style="${cur === l.id ? `color:${l.color};` : ''}">${l.label}</span>
+      <span class="tb-period">${l.period}</span>
+      <div class="tb-bar" style="background:${cur === l.id ? l.color : 'transparent'};"></div>
+    </div>`).join('');
+
+  // Context
+  const ctx = document.getElementById('lcCtx');
+  ctx.style.borderLeftColor = lc.color;
+  ctx.style.background = lc.bg;
+  ctx.innerHTML = `<strong style="color:${lc.color};">${lc.label} 단계</strong> &ensp;${lc.desc}`;
+
+  // Matrix
+  const cells = [];
+  cells.push('<div></div>');
+
+  FEATS.forEach(f => {
+    const tags = f.tags.map(t =>
+      `<span class="type-tag" style="background:${t.bg};color:${t.tc};">${t.t}</span>`).join('');
+    cells.push(`
+      <div class="col-hdr">
+        <div class="col-hdr-name">${f.label}</div>
+        <div class="col-hdr-sub">${f.sub}</div>
+        <div class="col-hdr-tags">${tags}</div>
+      </div>`);
+  });
+
+  const isChurned = cur === 'churned';
+
+  FREQS.forEach((fr, ri) => {
+    const churnNote = isChurned ? '<div class="row-churn">이탈 전<br>마지막 세그</div>' : '';
+    cells.push(`
+      <div class="row-hdr">
+        <span class="row-badge" style="background:${fr.bg};border-color:${fr.br};color:${fr.tx};">${fr.label}</span>
+        <span class="row-sub">${fr.sub}</span>
+        ${churnNote}
+      </div>`);
+
+    FEATS.forEach((fe, fi) => {
+      const c = DATA[cur][fr.id][fe.id];
+      const st = ST[c.s];
+      const delay = (ri * 3 + fi) * 0.03;
+      const isAnom = c.s === 'anomaly';
+      const bw = isAnom ? '1.5px' : '1px';
+
+      let sigEl = '';
+      if (c.sig === 'a') sigEl = `<div class="cell-signal blink" style="background:#DC2626;"></div>`;
+      else if (c.sig === 'o') sigEl = `<div class="cell-signal" style="background:#059669;"></div>`;
+
+      const d2 = c.d2 ? `<br><span class="muted">${c.d2}</span>` : '';
+
+      cells.push(`
+        <div class="cell" style="
+          background:${st.bg};
+          border-color:${st.br};
+          border-width:${bw};
+          color:${st.tx};
+          animation-delay:${delay}s;
+        ">
+          <div class="cell-top">
+            <span class="status-badge" style="background:${st.bbg};color:${st.btx};">${st.l}</span>
+            ${sigEl}
+          </div>
+          <div class="cell-name">${c.n}</div>
+          <div class="cell-desc">${c.d}${d2}</div>
+        </div>`);
+    });
+  });
+
+  document.getElementById('matrix').innerHTML = cells.join('');
+}
+
+function go(id) { cur = id; render(); }
+
+render();
+</script>
+</body>
+</html>
