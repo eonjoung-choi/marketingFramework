@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>앱 사용자 현황 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:   #F2F1EE;
+  --s0:   #FFFFFF;
+  --s1:   #F7F6F3;
+  --s2:   #EEECEA;
+  --t1:   #18181A;
+  --t2:   #6B6966;
+  --t3:   #A8A6A2;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--s0);
+  height: 54px;
+  display: flex;
+  align-items: center;
+  padding: 0 36px;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.hdr-logo  { font-size: 13px; font-weight: 700; color: var(--t1); letter-spacing: -.2px; }
+.hdr-sep   { width: 1px; height: 16px; background: var(--s2); }
+.hdr-meta  { font-size: 11px; color: var(--t3); }
+.hdr-right { margin-left: auto; display:flex; align-items:center; gap:16px; }
+.hdr-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 4px 10px; border-radius: 99px;
+  background: #FEE2E2;
+  color: #B91C1C;
+  letter-spacing: .04em;
+}
+.hdr-date  { font-size: 11px; color: var(--t3); }
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--s0);
+  gap: 0;
+  margin-bottom: 4px;
+}
+.kpi {
+  padding: 14px 24px;
+  background: var(--s0);
+  position: relative;
+}
+.kpi + .kpi::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 1px;
+  background: var(--s2);
+}
+.kpi-label { font-size: 10px; color: var(--t3); letter-spacing: .05em; margin-bottom: 5px; }
+.kpi-val   { font-size: 22px; font-weight: 700; color: var(--t1); letter-spacing: -.5px; line-height:1; margin-bottom: 5px; }
+.kpi-sub   { font-size: 11px; color: var(--t2); display:flex; align-items:center; gap:4px; }
+.kpi-chg   { font-size: 11px; font-weight: 500; }
+.up   { color: #16A34A; }
+.dn   { color: #DC2626; }
+.neu  { color: var(--t3); }
+
+/* ── MAIN ── */
+main { padding: 20px 36px 60px; max-width: 1400px; margin: 0 auto; }
+
+.sec-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
+.sec-num   { font-size: 10px; font-weight: 700; color: var(--t3); letter-spacing:.1em; }
+.sec-title { font-size: 13px; font-weight: 700; color: var(--t1); }
+.sec-rule  { flex:1; height:1px; background: var(--s2); }
+.sec-note  { font-size: 11px; color: var(--t3); }
+
+/* ── TABS ── */
+.tab-wrap {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--s0);
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  gap: 0;
+}
+.tab-btn {
+  padding: 12px 10px 10px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--s0);
+  transition: background .15s;
+  position: relative;
+}
+.tab-btn:hover { background: var(--s1); }
+.tab-btn.active { background: var(--s0); }
+.tb-label  { font-size: 12px; font-weight: 500; color: var(--t2); display:block; }
+.tab-btn.active .tb-label { font-weight: 700; }
+.tb-period { font-size: 10px; color: var(--t3); display: block; margin-top: 1px; }
+.tb-count  { font-size: 11px; font-weight: 700; display: block; margin-top: 3px; }
+.tb-bar    { position:absolute; bottom:0; left:0; right:0; height:3px; background:transparent; border-radius:3px 3px 0 0; }
+
+/* ── LC CONTEXT ── */
+.lc-ctx {
+  padding: 10px 16px;
+  font-size: 11px; color: var(--t2); line-height: 1.6;
+  background: var(--s0);
+  border-top: 2px solid var(--s2);
+}
+
+/* ── MATRIX WRAP ── */
+.matrix-outer {
+  background: var(--bg);
+  border-radius: 0 0 10px 10px;
+  padding: 12px;
+  margin-bottom: 6px;
+  background: var(--s0);
+}
+.matrix {
+  display: grid;
+  grid-template-columns: 72px repeat(3, 1fr);
+  gap: 6px;
+}
+
+/* Column & Row headers */
+.col-hdr {
+  background: var(--s1);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.col-hdr-name { font-size: 11px; font-weight: 700; color: var(--t1); margin-bottom: 2px; }
+.col-hdr-sub  { font-size: 10px; color: var(--t3); margin-bottom: 7px; }
+.col-hdr-tags { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; }
+.type-tag     { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 99px; }
+
+.row-hdr {
+  display: flex; flex-direction: column;
+  align-items: flex-end; justify-content: center;
+  gap: 4px; padding-right: 4px;
+}
+.row-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 4px 9px; border-radius: 99px;
+  white-space: nowrap;
+}
+.row-sub   { font-size: 9px; color: var(--t3); text-align:right; }
+.row-churn { font-size: 9px; color: var(--t3); text-align:right; line-height:1.4; }
+
+/* ── CELL ── */
+.cell {
+  border-radius: 8px;
+  padding: 12px 13px;
+  position: relative;
+  animation: cellIn .25s ease both;
+  min-height: 100px;
+  cursor: default;
+}
+@keyframes cellIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.cell.is-anomaly { animation: cellIn .25s ease both, glw 3s ease-in-out infinite; }
+@keyframes glw {
+  0%,100%{ box-shadow:none; }
+  50%    { box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
+}
+
+.cell-top  { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.st-badge  { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 99px; letter-spacing:.02em; }
+.cell-sig  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+.cell-sig.blink { animation: blink 1.8s ease-in-out infinite; }
+
+.cell-count { font-size: 20px; font-weight: 700; letter-spacing:-.5px; line-height:1; margin-bottom:4px; }
+.cell-mom   { font-size: 10px; font-weight: 500; margin-bottom:6px; display:flex; align-items:center; gap:3px; }
+.cell-name  { font-size: 10px; line-height:1.35; opacity:.7; }
+
+/* STATUS CELL COLORS — background only, no borders */
+.c-best    { background:#DCFCE7; color:#166534; }
+.c-best    .st-badge { background:#BBF7D0; color:#15803D; }
+
+.c-good    { background:#CCFBF1; color:#0F766E; }
+.c-good    .st-badge { background:#99F6E4; color:#0D9488; }
+
+.c-normal  { background:#F1F0ED; color:#6B6966; }
+.c-normal  .st-badge { background:#E4E2DC; color:#8A8880; }
+
+.c-watch   { background:#DBEAFE; color:#1E40AF; }
+.c-watch   .st-badge { background:#BFDBFE; color:#1D4ED8; }
+
+.c-warning { background:#FEF3C7; color:#92400E; }
+.c-warning .st-badge { background:#FDE68A; color:#B45309; }
+
+.c-danger  { background:#FFE4E6; color:#9F1239; }
+.c-danger  .st-badge { background:#FECDD3; color:#BE123C; }
+
+.c-anomaly { background:#FEE2E2; color:#7F1D1D; }
+.c-anomaly .st-badge { background:#DC2626; color:#FFFFFF; }
+
+/* ── LEGEND ── */
+.legend {
+  display: flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding: 10px 0 20px;
+}
+.leg { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--t2); }
+.leg-swatch { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.leg-sep { width:1px; height:12px; background:var(--s2); margin:0 4px; }
+
+/* ── BOTTOM PANELS ── */
+.bottom-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; }
+.panel {
+  background: var(--s0);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.panel-title {
+  font-size: 12px; font-weight: 700; color: var(--t1);
+  margin-bottom: 14px;
+  display: flex; align-items:center; gap:8px;
+}
+.pt-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius:99px;
+}
+
+/* Anomaly list */
+.anomaly-list { display:flex; flex-direction:column; gap:5px; }
+.anomaly-row  {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--s1);
+}
+.ar-status { font-size:9px; font-weight:700; padding:3px 7px; border-radius:99px; white-space:nowrap; }
+.ar-info   { display:flex; flex-direction:column; gap:1px; }
+.ar-seg    { font-size:11px; font-weight:500; color:var(--t1); }
+.ar-desc   { font-size:10px; color:var(--t2); }
+.ar-count  { font-size:12px; font-weight:700; text-align:right; color:var(--t1); }
+.ar-mom    { font-size:10px; font-weight:500; text-align:right; white-space:nowrap; min-width:48px; }
+
+/* Flow list */
+.flow-list { display:flex; flex-direction:column; gap:5px; }
+.flow-row  {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--s1);
+}
+.flow-cell .fc-seg { font-size:11px; font-weight:500; color:var(--t1); display:block; }
+.flow-cell .fc-lc  { font-size:10px; color:var(--t3); display:block; }
+.flow-arrow        { text-align:center; font-size:13px; color:var(--t3); }
+.flow-count .fn    { font-size:12px; font-weight:700; display:block; text-align:right; }
+.flow-count .fm    { font-size:10px; display:block; text-align:right; }
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">앱 사용자 현황 대시보드</div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-meta">방문 빈도 × 기능 프로파일 × 생애주기</div>
+  <div class="hdr-right">
+    <div class="hdr-badge">이상징후 5건</div>
+    <div class="hdr-date">2025년 03월 기준</div>
+  </div>
+</header>
+
+<div class="kpi-strip" id="kpiStrip"></div>
+
+<main>
+
+  <div class="sec-header" style="margin-top:8px;">
+    <span class="sec-num">세그먼트 매트릭스</span>
+    <span class="sec-title">생애주기별 사용자 현황</span>
+    <div class="sec-rule"></div>
+    <span class="sec-note">셀 수치 = 사용자 수 / 전월 대비 변화율</span>
+  </div>
+
+  <div class="tab-wrap" id="tabWrap"></div>
+  <div class="lc-ctx"   id="lcCtx"></div>
+  <div class="matrix-outer">
+    <div class="matrix" id="matrix"></div>
+  </div>
+
+  <div class="legend">
+    <span style="font-size:10px;color:var(--t3);margin-right:2px;">상태</span>
+    <div class="leg"><div class="leg-swatch" style="background:#DCFCE7;"></div>최적</div>
+    <div class="leg"><div class="leg-swatch" style="background:#CCFBF1;"></div>건강</div>
+    <div class="leg"><div class="leg-swatch" style="background:#F1F0ED;"></div>정상</div>
+    <div class="leg"><div class="leg-swatch" style="background:#DBEAFE;"></div>주시</div>
+    <div class="leg"><div class="leg-swatch" style="background:#FEF3C7;"></div>경고</div>
+    <div class="leg"><div class="leg-swatch" style="background:#FFE4E6;"></div>위험</div>
+    <div class="leg"><div class="leg-swatch" style="background:#FEE2E2;"></div>이상징후</div>
+    <div class="leg-sep"></div>
+    <div class="leg"><span style="width:7px;height:7px;border-radius:50%;background:#DC2626;display:inline-block;flex-shrink:0;"></span>&nbsp;이상징후</div>
+    <div class="leg"><span style="width:7px;height:7px;border-radius:50%;background:#16A34A;display:inline-block;flex-shrink:0;"></span>&nbsp;기회</div>
+    <div class="leg-sep"></div>
+    <div class="leg"><span class="up" style="font-weight:700;font-size:11px;">▲</span>&nbsp;건강 셀 증가</div>
+    <div class="leg"><span class="dn" style="font-weight:700;font-size:11px;">▲</span>&nbsp;위험 셀 증가</div>
+  </div>
+
+  <div class="sec-header">
+    <span class="sec-num">이상 감지</span>
+    <span class="sec-title">이상징후 현황 및 셀 간 이동 흐름</span>
+    <div class="sec-rule"></div>
+  </div>
+  <div class="bottom-row">
+    <div class="panel">
+      <div class="panel-title">
+        이상징후 감지 현황
+        <span class="pt-badge" style="background:#FEE2E2;color:#B91C1C;">전체 생애주기</span>
+      </div>
+      <div class="anomaly-list" id="anomalyList"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        이번 달 주요 셀 이동
+        <span class="pt-badge" style="background:#DBEAFE;color:#1E40AF;">전월 대비</span>
+      </div>
+      <div class="flow-list" id="flowList"></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const ST = {
+  best:    {l:'최적',    cls:'c-best',    bbg:'#BBF7D0',btx:'#15803D', good:true},
+  good:    {l:'건강',    cls:'c-good',    bbg:'#99F6E4',btx:'#0D9488', good:true},
+  normal:  {l:'정상',    cls:'c-normal',  bbg:'#E4E2DC',btx:'#8A8880', good:true},
+  watch:   {l:'주시',    cls:'c-watch',   bbg:'#BFDBFE',btx:'#1D4ED8', good:false},
+  warning: {l:'경고',    cls:'c-warning', bbg:'#FDE68A',btx:'#B45309', good:false},
+  danger:  {l:'위험',    cls:'c-danger',  bbg:'#FECDD3',btx:'#BE123C', good:false},
+  anomaly: {l:'이상징후', cls:'c-anomaly', bbg:'#DC2626',btx:'#FFFFFF', good:false},
+};
+
+const LC = [
+  {id:'new',     label:'신규',  period:'D+0~30일',      color:'#16A34A', ctxbg:'#F0FDF4', ctxleft:'#86EFAC',
+   desc:'가입 직후 단계. 라이트+확인형은 온보딩 이탈 전조로 즉시 감지. 파워+탐색형 신규는 VIP 후보 조기 마킹.'},
+  {id:'growth',  label:'성장',  period:'D+31~180일',    color:'#2563EB', ctxbg:'#EFF6FF', ctxleft:'#93C5FD',
+   desc:'습관 형성 기간. 파워+확인형 고착 시작 = 조기 이상징후. 캐쥬얼+탐색형의 파워 전환 신호도 이 구간에서 포착.'},
+  {id:'mature',  label:'성숙',  period:'D+181일+',      color:'#7C3AED', ctxbg:'#F5F3FF', ctxleft:'#C4B5FD',
+   desc:'장기 사용자 단계. 파워+확인형 고착은 핵심 이상징후. 라이트+확인형 이탈 임박은 대규모 이탈 경보 수준.'},
+  {id:'return',  label:'복귀',  period:'중단 후 재방문', color:'#D97706', ctxbg:'#FFFBEB', ctxleft:'#FCD34D',
+   desc:'이탈 후 돌아온 유저. 라이트+확인형 복귀는 재이탈 가능성 높음. 파워+탐색형 복귀는 완전 복귀 신호.'},
+  {id:'churned', label:'이탈',  period:'30일+ 미방문',  color:'#DC2626', ctxbg:'#FEF2F2', ctxleft:'#FCA5A5',
+   desc:'이탈 완료. Y축은 이탈 직전 마지막 세그 기준. 파워+탐색형 이탈은 VIP 이탈로 최우선 대응 필요.'},
+];
+
+const FREQS = [
+  {id:'power',  label:'파워',   sub:'월 8일+',  bg:'#DCFCE7',tx:'#15803D'},
+  {id:'casual', label:'캐쥬얼', sub:'월 3~7일', bg:'#DBEAFE',tx:'#1D4ED8'},
+  {id:'light',  label:'라이트', sub:'월 1~2회', bg:'#F1F0ED',tx:'#6B6966'},
+];
+
+const FEATS = [
+  {id:'passive', label:'확인형 집중',      sub:'결제내역·명세서 위주',
+   tags:[{t:'확인형',bg:'#E4E2DC',tc:'#6B6966'}]},
+  {id:'mixed',   label:'혼합 활용',        sub:'여러 유형 균형',
+   tags:[{t:'확인형',bg:'#E4E2DC',tc:'#6B6966'},{t:'혜택형',bg:'#BFDBFE',tc:'#1D4ED8'},{t:'관리형',bg:'#A7F3D0',tc:'#065F46'}]},
+  {id:'value',   label:'탐색·관리·실행형', sub:'혜택·분석·실행 중심',
+   tags:[{t:'혜택형',bg:'#BFDBFE',tc:'#1D4ED8'},{t:'관리형',bg:'#A7F3D0',tc:'#065F46'},{t:'실행형',bg:'#DDD6FE',tc:'#5B21B6'}]},
+];
+
+const DATA = {
+  new:{
+    power:{
+      passive:{s:'watch',  n:'기능 탐색 시작',    sig:null, cnt:4200,  mom:+12.4},
+      mixed:  {s:'good',   n:'빠른 온보딩',       sig:null, cnt:3800,  mom:+18.2},
+      value:  {s:'best',   n:'고관여 신규',        sig:'o',  cnt:1400,  mom:+24.6},
+    },
+    casual:{
+      passive:{s:'normal', n:'일반 온보딩',        sig:null, cnt:12400, mom:+8.2},
+      mixed:  {s:'good',   n:'정상 온보딩',        sig:null, cnt:14800, mom:+15.4},
+      value:  {s:'good',   n:'기능 탐색형',        sig:null, cnt:5200,  mom:+21.8},
+    },
+    light:{
+      passive:{s:'warning',n:'온보딩 이탈 전조',   sig:'a',  cnt:18600, mom:-2.4},
+      mixed:  {s:'watch',  n:'느린 정착',          sig:null, cnt:8400,  mom:+4.2},
+      value:  {s:'watch',  n:'탐색하나 방문 낮음', sig:null, cnt:2800,  mom:+8.6},
+    },
+  },
+  growth:{
+    power:{
+      passive:{s:'anomaly',n:'확인형 고착 경보',   sig:'a',  cnt:18400, mom:-3.2},
+      mixed:  {s:'good',   n:'건강한 성장',        sig:null, cnt:22100, mom:+4.8},
+      value:  {s:'best',   n:'슈퍼유저 후보',      sig:'o',  cnt:8600,  mom:+9.2},
+    },
+    casual:{
+      passive:{s:'watch',  n:'편식 가능성 주시',   sig:null, cnt:54200, mom:-1.8},
+      mixed:  {s:'good',   n:'정상 성장',          sig:null, cnt:68400, mom:+3.2},
+      value:  {s:'good',   n:'적극 활용',          sig:'o',  cnt:24800, mom:+7.6},
+    },
+    light:{
+      passive:{s:'warning',n:'성장 정체',           sig:'a',  cnt:42100, mom:-8.4},
+      mixed:  {s:'watch',  n:'성장 둔화',          sig:null, cnt:28600, mom:-2.1},
+      value:  {s:'watch',  n:'방문만 낮음',         sig:null, cnt:9800,  mom:+1.4},
+    },
+  },
+  mature:{
+    power:{
+      passive:{s:'anomaly',n:'핵심 이상징후',       sig:'a',  cnt:42800, mom:-8.2},
+      mixed:  {s:'good',   n:'충성 사용자',         sig:null, cnt:28400, mom:+1.2},
+      value:  {s:'best',   n:'VIP 유저',            sig:'o',  cnt:11200, mom:+3.4},
+    },
+    casual:{
+      passive:{s:'warning',n:'기능 편식 경계',      sig:'a',  cnt:124600,mom:-2.8},
+      mixed:  {s:'good',   n:'안정적 사용',         sig:null, cnt:86400, mom:+0.6},
+      value:  {s:'good',   n:'적극 활용자',         sig:null, cnt:32100, mom:+5.2},
+    },
+    light:{
+      passive:{s:'danger', n:'이탈 임박',           sig:'a',  cnt:98200, mom:-12.1},
+      mixed:  {s:'warning',n:'방문 감소 추세',      sig:'a',  cnt:54800, mom:-4.6},
+      value:  {s:'watch',  n:'방문만 낮음',         sig:null, cnt:18400, mom:-1.2},
+    },
+  },
+  return:{
+    power:{
+      passive:{s:'watch',  n:'복귀 후 확인만',      sig:null, cnt:2400,  mom:+42.1},
+      mixed:  {s:'good',   n:'성공적 복귀',         sig:null, cnt:3200,  mom:+68.4},
+      value:  {s:'best',   n:'완전 복귀',           sig:'o',  cnt:1800,  mom:+82.6},
+    },
+    casual:{
+      passive:{s:'watch',  n:'조심스런 복귀',       sig:null, cnt:6800,  mom:+28.4},
+      mixed:  {s:'good',   n:'안정 복귀',           sig:null, cnt:9400,  mom:+52.1},
+      value:  {s:'good',   n:'적극 복귀',           sig:'o',  cnt:4200,  mom:+64.8},
+    },
+    light:{
+      passive:{s:'warning',n:'재이탈 위험',         sig:'a',  cnt:8200,  mom:+14.2},
+      mixed:  {s:'watch',  n:'복귀 모니터링',       sig:null, cnt:5600,  mom:+32.4},
+      value:  {s:'watch',  n:'복귀 초기',           sig:null, cnt:2400,  mom:+48.6},
+    },
+  },
+  churned:{
+    power:{
+      passive:{s:'danger', n:'파워 이탈',           sig:null, cnt:12400, mom:+8.2},
+      mixed:  {s:'danger', n:'고가치 이탈',         sig:null, cnt:8600,  mom:+4.4},
+      value:  {s:'anomaly',n:'VIP 이탈',            sig:'a',  cnt:3200,  mom:+12.8},
+    },
+    casual:{
+      passive:{s:'danger', n:'일반 이탈',           sig:null, cnt:48200, mom:+3.6},
+      mixed:  {s:'danger', n:'중간 가치 이탈',      sig:null, cnt:32400, mom:+2.8},
+      value:  {s:'danger', n:'기능형 이탈',         sig:'a',  cnt:18600, mom:+6.4},
+    },
+    light:{
+      passive:{s:'warning',n:'저관여 이탈',         sig:null, cnt:62800, mom:+1.2},
+      mixed:  {s:'watch',  n:'경계 이탈',           sig:null, cnt:28400, mom:-0.8},
+      value:  {s:'watch',  n:'잠재 복귀 가능',      sig:null, cnt:12200, mom:-2.4},
+    },
+  },
+};
+
+const ANOMALIES = [
+  {st:'anomaly', seg:'성숙 · 파워 + 확인형',    desc:'장기 파워 유저 확인형 고착',  cnt:42800,  mom:-8.2},
+  {st:'danger',  seg:'성숙 · 라이트 + 확인형',  desc:'이탈 임박 — 대규모 군집',     cnt:98200,  mom:-12.1},
+  {st:'anomaly', seg:'성장 · 파워 + 확인형',    desc:'성장기 확인형 고착 조기 경보', cnt:18400,  mom:-3.2},
+  {st:'anomaly', seg:'이탈 · 파워 + 탐색실행형',desc:'VIP 이탈 — 최우선 대응',      cnt:3200,   mom:+12.8},
+  {st:'warning', seg:'신규 · 라이트 + 확인형',  desc:'온보딩 이탈 전조',             cnt:18600,  mom:-2.4},
+];
+
+const FLOWS = [
+  {from:'라이트+확인형',  to:'이탈',          cnt:-9420, type:'dn', lc:'성숙'},
+  {from:'파워+확인형',    to:'캐쥬얼+확인형', cnt:-6240, type:'dn', lc:'성숙'},
+  {from:'캐쥬얼+혼합',    to:'파워+혼합',     cnt:+4180, type:'up', lc:'성장'},
+  {from:'라이트+확인형',  to:'이탈',          cnt:-7840, type:'dn', lc:'성장'},
+  {from:'캐쥬얼+탐색형',  to:'파워+탐색형',   cnt:+2640, type:'up', lc:'성숙'},
+];
+
+function fmt(n)  { return Math.abs(n).toLocaleString('ko-KR'); }
+
+function fmtMom(m, good) {
+  const up  = m >= 0;
+  const arr = up ? '▲' : '▼';
+  const sgn = up ? '+' : '';
+  let cls = '';
+  if (good)  cls = up ? 'up' : 'dn';
+  else       cls = up ? 'dn' : 'up';
+  return `<span class="${cls}">${arr} ${sgn}${Math.abs(m).toFixed(1)}%</span>`;
+}
+
+function computeKpi(lcId) {
+  const rows = DATA[lcId];
+  let total=0, dangerU=0, bestU=0, anomC=0;
+  FREQS.forEach(fr => FEATS.forEach(fe => {
+    const c = rows[fr.id][fe.id];
+    total   += c.cnt;
+    if (!ST[c.s].good) dangerU += c.cnt;
+    if (c.s==='best'||c.s==='good') bestU += c.cnt;
+    if (c.s==='anomaly') anomC++;
+  }));
+  return {total, dangerU, bestU, anomC};
+}
+
+function renderKpi(lcId) {
+  const lc = LC.find(l=>l.id===lcId);
+  const {total,dangerU,bestU,anomC} = computeKpi(lcId);
+  const momMap = {new:+14.2,growth:+2.4,mature:-4.8,return:+38.6,churned:+3.2};
+  const mom = momMap[lcId];
+  const mc  = mom>=0?'up':'dn';
+  const ma  = mom>=0?'▲':'▼';
+
+  document.getElementById('kpiStrip').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">분석 대상 (${lc.label})</div>
+      <div class="kpi-val">${total.toLocaleString()}</div>
+      <div class="kpi-sub">
+        <span class="kpi-chg ${mc}">${ma} ${Math.abs(mom).toFixed(1)}%</span>
+        <span>vs 전월</span>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">이상징후 셀</div>
+      <div class="kpi-val" style="color:#DC2626;">${anomC}개</div>
+      <div class="kpi-sub" style="color:var(--t3);">즉각 대응 필요</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">위험·이상 사용자</div>
+      <div class="kpi-val">${dangerU.toLocaleString()}</div>
+      <div class="kpi-sub" style="color:#D97706;">${((dangerU/total)*100).toFixed(1)}% of ${lc.label}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">건강·최적 사용자</div>
+      <div class="kpi-val" style="color:#16A34A;">${bestU.toLocaleString()}</div>
+      <div class="kpi-sub" style="color:var(--t3);">${((bestU/total)*100).toFixed(1)}% of ${lc.label}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">전체 누적 사용자</div>
+      <div class="kpi-val">1,117,000</div>
+      <div class="kpi-sub"><span class="kpi-chg dn">▼ 2.1%</span><span>vs 전월</span></div>
+    </div>`;
+}
+
+function renderTabs(cur) {
+  document.getElementById('tabWrap').innerHTML = LC.map(lc => {
+    const {total} = computeKpi(lc.id);
+    const active  = lc.id === cur;
+    return `
+      <div class="tab-btn ${active?'active':''}" onclick="go('${lc.id}')">
+        <span class="tb-label" style="${active?`color:${lc.color};`:''}">
+          ${lc.label}
+        </span>
+        <span class="tb-period">${lc.period}</span>
+        <span class="tb-count" style="color:${active?lc.color:'var(--t3)'};">
+          ${total.toLocaleString()}명
+        </span>
+        <div class="tb-bar" style="background:${active?lc.color:'transparent'};"></div>
+      </div>`;
+  }).join('');
+}
+
+function renderCtx(lcId) {
+  const lc = LC.find(l=>l.id===lcId);
+  const ctx = document.getElementById('lcCtx');
+  ctx.style.background   = lc.ctxbg;
+  ctx.style.borderTopColor = lc.ctxleft;
+  ctx.innerHTML = `<strong style="color:${lc.color};">${lc.label} 단계</strong>&ensp;${lc.desc}`;
+}
+
+function renderMatrix(lcId) {
+  const isChurned = lcId === 'churned';
+  const cells = ['<div></div>'];
+
+  FEATS.forEach(f => {
+    const tags = f.tags.map(t =>
+      `<span class="type-tag" style="background:${t.bg};color:${t.tc};">${t.t}</span>`).join('');
+    cells.push(`
+      <div class="col-hdr">
+        <div class="col-hdr-name">${f.label}</div>
+        <div class="col-hdr-sub">${f.sub}</div>
+        <div class="col-hdr-tags">${tags}</div>
+      </div>`);
+  });
+
+  FREQS.forEach((fr, ri) => {
+    cells.push(`
+      <div class="row-hdr">
+        <span class="row-badge" style="background:${fr.bg};color:${fr.tx};">${fr.label}</span>
+        <span class="row-sub">${fr.sub}</span>
+        ${isChurned?'<div class="row-churn">이탈 전<br>마지막 세그</div>':''}
+      </div>`);
+
+    FEATS.forEach((fe, fi) => {
+      const c  = DATA[lcId][fr.id][fe.id];
+      const st = ST[c.s];
+      const isA = c.s === 'anomaly';
+      const delay = (ri*3+fi) * 0.03;
+      const sigEl = c.sig==='a'
+        ? `<div class="cell-sig blink" style="background:#DC2626;"></div>`
+        : c.sig==='o'
+          ? `<div class="cell-sig" style="background:#16A34A;"></div>`
+          : '';
+
+      cells.push(`
+        <div class="cell ${st.cls} ${isA?'is-anomaly':''}"
+             style="animation-delay:${delay}s;">
+          <div class="cell-top">
+            <span class="st-badge">${st.l}</span>
+            ${sigEl}
+          </div>
+          <div class="cell-count">${fmt(c.cnt)}</div>
+          <div class="cell-mom">
+            ${fmtMom(c.mom, st.good)}
+            <span style="color:var(--t3);font-size:9px;">vs 전월</span>
+          </div>
+          <div class="cell-name">${c.n}</div>
+        </div>`);
+    });
+  });
+
+  document.getElementById('matrix').innerHTML = cells.join('');
+}
+
+function renderAnomalies() {
+  document.getElementById('anomalyList').innerHTML = ANOMALIES.map(a => {
+    const st   = ST[a.st];
+    const up   = a.mom >= 0;
+    const good = st.good;
+    const cls  = (good ? up : !up) ? 'up' : 'dn';
+    const arr  = up ? '▲' : '▼';
+    return `
+      <div class="anomaly-row">
+        <span class="ar-status" style="background:${st.bbg};color:${st.btx};">${st.l}</span>
+        <div class="ar-info">
+          <span class="ar-seg">${a.seg}</span>
+          <span class="ar-desc">${a.desc}</span>
+        </div>
+        <div class="ar-count">${a.cnt.toLocaleString()}명</div>
+        <div class="ar-mom">
+          <span class="${cls}">${arr} ${Math.abs(a.mom).toFixed(1)}%</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderFlows() {
+  document.getElementById('flowList').innerHTML = FLOWS.map(f => {
+    const isDn = f.type === 'dn';
+    const cls  = isDn ? 'dn' : 'up';
+    const sign = isDn ? '' : '+';
+    return `
+      <div class="flow-row">
+        <div class="flow-cell">
+          <span class="fc-seg">${f.from}</span>
+          <span class="fc-lc">${f.lc}</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-cell">
+          <span class="fc-seg">${f.to}</span>
+        </div>
+        <div class="flow-count">
+          <span class="fn ${cls}">${sign}${Math.abs(f.cnt).toLocaleString()}명</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+let cur = 'mature';
+function go(id) {
+  cur = id;
+  renderKpi(cur); renderTabs(cur); renderCtx(cur); renderMatrix(cur);
+}
+
+renderKpi(cur); renderTabs(cur); renderCtx(cur); renderMatrix(cur);
+renderAnomalies(); renderFlows();
+</script>
+</body>
+</html>
